@@ -35,7 +35,13 @@
 
 /* address space */
 #define MNTVA_OFF_REG		0x5f0000	/* memory mapped registers */
+
 #define MNTVA_OFF_FB		0x000000	/* frame buffer */
 #define MNTVA_FB_SIZE		0x5f0000
+
+#define MNTVA_COLORMODE 0x48
+#define MNTVA_SCALEMODE 0x04
+#define MNTVA_SCREENW 0x06
+#define MNTVA_SCREENH 0x08
 
 #endif /* MNTVA2000REG_H */

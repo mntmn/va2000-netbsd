@@ -102,11 +102,6 @@ mntva_match(device_t parent, cfdata_t match, void *aux)
 	return (0);
 }
 
-#define MNTVA_COLORMODE 0x48
-#define MNTVA_SCALEMODE 0x04
-#define MNTVA_SCREENW 0x06
-#define MNTVA_SCREENH 0x08
-
 static void
 mntva_attach(device_t parent, device_t self, void *aux)
 {
