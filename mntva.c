@@ -1,4 +1,4 @@
-/*  $NetBSD: mntva2000.c,v 1.0 2016/09/17 24:47:00 mntmn Exp $  */
+/*  $NetBSD$  */
 
 /*
  * Copyright (c) 2012 The NetBSD Foundation, Inc.   
@@ -30,7 +30,7 @@
 
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0,
-    "$NetBSD: mntva2000.c,v 1.0 2016/09/17 24:47:00 mntmn Exp $");
+    "$NetBSD$");
 
 #include <sys/param.h>
 #include <sys/systm.h>
