@@ -37,35 +37,36 @@
 #include <dev/rasops/rasops.h>
 #include <dev/wscons/wsdisplay_vconsvar.h>
 
-struct mntva_softc {
-  device_t sc_dev;
+struct mntva_softc
+{
+	device_t sc_dev;
 
-  /* bus attachment, handles */
-  
-  struct bus_space_tag  sc_bst;
+	/* bus attachment, handles */
 
-  bus_space_tag_t   sc_iot;
-  bus_space_handle_t  sc_ioh;
-  
-  bus_addr_t sc_fba;
-  bus_addr_t sc_rga;
+	struct bus_space_tag sc_bst;
 
-  size_t sc_memsize;
-  const struct videomode *sc_videomode;
-  int sc_width, sc_height, sc_linebytes, sc_bpp;
+	bus_space_tag_t sc_iot;
+	bus_space_handle_t sc_ioh;
 
-  int sc_mode;
-  uint32_t sc_bg;
+	bus_addr_t sc_fba;
+	bus_addr_t sc_rga;
 
-  struct vcons_screen sc_console_screen;
-  struct vcons_data vd;
-  struct wsscreen_descr sc_defaultscreen_descr;
-  const struct wsscreen_descr *sc_screens[1];
-  struct wsscreen_list sc_screenlist;
+	size_t sc_memsize;
+	const struct videomode *sc_videomode;
+	int sc_width, sc_height, sc_linebytes, sc_bpp;
 
-  u_char sc_cmap_red[256];
-  u_char sc_cmap_green[256];
-  u_char sc_cmap_blue[256];
+	int sc_mode;
+	uint32_t sc_bg;
+
+	struct vcons_screen sc_console_screen;
+	struct vcons_data vd;
+	struct wsscreen_descr sc_defaultscreen_descr;
+	const struct wsscreen_descr *sc_screens[1];
+	struct wsscreen_list sc_screenlist;
+
+	u_char sc_cmap_red[256];
+	u_char sc_cmap_green[256];
+	u_char sc_cmap_blue[256];
 
 };
 
