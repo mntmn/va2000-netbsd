@@ -1,9 +1,11 @@
-/*	$NetBSD: tdvfbreg.h,v 1.3 2012/07/20 21:31:28 rkujawa Exp $	*/
+/*	$NetBSD$  */
 
 /*
- * Copyright (c) 2012 The NetBSD Foundation, Inc. 
+ * Copyright (c) 2012, 2016 The NetBSD Foundation, Inc. 
  * All rights reserved.
  *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lukas F. Hartmann.
  * This code is derived from software contributed to The NetBSD Foundation
  * by Radoslaw Kujawa.
  *
@@ -31,17 +33,46 @@
 #ifndef MNTVA2000REG_H
 #define MNTVA2000REG_H
 
-//#define TDV_INITENABLE_EN_INIT  __BIT(0)      
-
 /* address space */
 #define MNTVA_OFF_REG		0x5f0000	/* memory mapped registers */
+#define MNTVA_REG_SIZE		0xFF
 
 #define MNTVA_OFF_FB		0x000000	/* frame buffer */
 #define MNTVA_FB_SIZE		0x5f0000
 
-#define MNTVA_COLORMODE 0x48
-#define MNTVA_SCALEMODE 0x04
-#define MNTVA_SCREENW 0x06
-#define MNTVA_SCREENH 0x08
+/* registers */
+#define MNTVA_SCALEMODE		0x04
+#define MNTVA_SCALEMODE1X		0
+#define MNTVA_SCALEMODE2X		1
+#define MNTVA_SCALEMODE3X		2	
+#define MNTVA_SCALEMODE4X		3	
+
+#define MNTVA_SCREENW		0x06
+#define MNTVA_SCREENH		0x08
+
+#define MNTVA_BLITTERBASEHI	0x1C	/* [23:16] */
+#define MNTVA_BLITTERBASELO	0x1E	/* [15:0] */
+
+#define MNTVA_BLITTERX1		0x20
+#define MNTVA_BLITTERY1		0x22
+#define MNTVA_BLITTERX2		0x24
+#define MNTVA_BLITTERY2		0x26
+#define MNTVA_BLITTERRGB	0x28	/* filling for 16bit and 8bit modes */
+
+#define MNTVA_BLITTER_ENABLE	0x2A
+#define MNTVA_BLITTER_FILL		__BIT(0) /* fill [x1,y1]-[x2,y2] */
+#define MNTVA_BLITTER_COPY		__BIT(1) /* copy [x3,y3]-[x4,y4] to
+						         [x1,y1]-[x2,y2] */
+#define MNTVA_BLITTERX3		0x2C
+#define MNTVA_BLITTERY3		0x2E
+#define MNTVA_BLITTERX4		0x30
+#define MNTVA_BLITTERY4		0x32
+#define MNTVA_BLITTERRGB32HI	0x34	/* filling for 24bit and 32bit modes */
+#define MNTVA_BLITTERRGB32LO	0x36	/* filling for 24bit and 32bit modes */
+
+#define MNTVA_COLORMODE 	0x48
+#define MNTVA_COLORMODE8		0
+#define MNTVA_COLORMODE16		__BIT(0)	
+#define MNTVA_COLORMODE32		__BIT(1)	
 
 #endif /* MNTVA2000REG_H */

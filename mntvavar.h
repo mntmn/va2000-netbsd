@@ -1,9 +1,11 @@
-/*  $NetBSD: mntva2000var.h,v 1.3 2012/07/29 20:31:53 rkujawa Exp $ */
+/*  $NetBSD$ */
 
 /*
- * Copyright (c) 2012 The NetBSD Foundation, Inc. 
+ * Copyright (c) 2012, 2016 The NetBSD Foundation, Inc. 
  * All rights reserved.
  *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lukas F. Hartmann.
  * This code is derived from software contributed to The NetBSD Foundation
  * by Radoslaw Kujawa.
  *
@@ -42,14 +44,14 @@ struct mntva_softc
 	device_t sc_dev;
 
 	/* bus attachment, handles */
-
 	struct bus_space_tag sc_bst;
 
 	bus_space_tag_t sc_iot;
-	bus_space_handle_t sc_ioh;
+	bus_space_handle_t sc_regh;
+	bus_space_handle_t sc_fbh;
 
-	bus_addr_t sc_fba;
-	bus_addr_t sc_rga;
+	bus_addr_t sc_regpa;
+	bus_addr_t sc_fbpa;
 
 	size_t sc_memsize;
 	int sc_width, sc_height, sc_linebytes, sc_bpp;
