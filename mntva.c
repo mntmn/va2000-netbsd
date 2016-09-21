@@ -43,8 +43,8 @@ __KERNEL_RCSID(0,
 #include <amiga/amiga/isr.h>
 
 #include <amiga/dev/zbusvar.h>
-#include <amiga/dev/mntva2000var.h>
-#include <amiga/dev/mntva2000reg.h>
+#include <amiga/dev/mntvavar.h>
+#include <amiga/dev/mntvareg.h>
 
 #include <dev/videomode/videomode.h>
 
