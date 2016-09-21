@@ -1,9 +1,11 @@
-/*	$NetBSD: tdvfbreg.h,v 1.3 2012/07/20 21:31:28 rkujawa Exp $	*/
+/*  $NetBSD$ */
 
 /*
- * Copyright (c) 2012 The NetBSD Foundation, Inc. 
+ * Copyright (c) 2012, 2016 The NetBSD Foundation, Inc. 
  * All rights reserved.
  *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lukas F. Hartmann.
  * This code is derived from software contributed to The NetBSD Foundation
  * by Radoslaw Kujawa.
  *
@@ -28,14 +30,45 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MNTVA2000REG_H
-#define MNTVA2000REG_H
+#ifndef MNTVA2000VAR_H
+#define MNTVA2000VAR_H
 
-//#define TDV_INITENABLE_EN_INIT  __BIT(0)	
+#include <dev/wscons/wsdisplayvar.h>
+#include <dev/wscons/wsconsio.h>
+#include <dev/wsfont/wsfont.h>
+#include <dev/rasops/rasops.h>
+#include <dev/wscons/wsdisplay_vconsvar.h>
 
-/* address space */
-#define MNTVA_OFF_REG		0x5f0000	/* memory mapped registers */
-#define MNTVA_OFF_FB		0x000000/* frame buffer */
-#define MNTVA_FB_SIZE		0x5f0000
+struct mntva_softc
+{
+	device_t sc_dev;
 
-#endif /* MNTVA2000REG_H */
+	/* bus attachment, handles */
+	struct bus_space_tag sc_bst;
+
+	bus_space_tag_t sc_iot;
+	bus_space_handle_t sc_regh;
+	bus_space_handle_t sc_fbh;
+
+	bus_addr_t sc_regpa;
+	bus_addr_t sc_fbpa;
+
+	size_t sc_memsize;
+	int sc_width, sc_height, sc_linebytes, sc_bpp;
+
+	int sc_mode;
+	uint32_t sc_bg;
+
+	struct vcons_screen sc_console_screen;
+	struct vcons_data vd;
+	struct wsscreen_descr sc_defaultscreen_descr;
+	const struct wsscreen_descr *sc_screens[1];
+	struct wsscreen_list sc_screenlist;
+
+	u_char sc_cmap_red[256];
+	u_char sc_cmap_green[256];
+	u_char sc_cmap_blue[256];
+
+};
+
+#endif /* MNTVA2000VAR_H */
