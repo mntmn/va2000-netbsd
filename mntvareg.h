@@ -31,11 +31,11 @@
 #ifndef MNTVA2000REG_H
 #define MNTVA2000REG_H
 
-//#define TDV_INITENABLE_EN_INIT  __BIT(0)	
+//#define TDV_INITENABLE_EN_INIT  __BIT(0)      
 
 /* address space */
 #define MNTVA_OFF_REG		0x5f0000	/* memory mapped registers */
-#define MNTVA_OFF_FB		0x000000/* frame buffer */
+#define MNTVA_OFF_FB		0x000000	/* frame buffer */
 #define MNTVA_FB_SIZE		0x5f0000
 
 #endif /* MNTVA2000REG_H */
