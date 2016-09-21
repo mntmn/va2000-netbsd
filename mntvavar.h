@@ -52,7 +52,6 @@ struct mntva_softc
 	bus_addr_t sc_rga;
 
 	size_t sc_memsize;
-	const struct videomode *sc_videomode;
 	int sc_width, sc_height, sc_linebytes, sc_bpp;
 
 	int sc_mode;

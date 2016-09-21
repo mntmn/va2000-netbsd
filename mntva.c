@@ -46,8 +46,6 @@ __KERNEL_RCSID(0,
 #include <amiga/dev/mntvavar.h>
 #include <amiga/dev/mntvareg.h>
 
-#include <dev/videomode/videomode.h>
-
 #include "opt_wsemul.h"
 //#include "opt_mntva.h"
 
@@ -57,7 +55,7 @@ static void mntva_attach(device_t, device_t, void *);
 //static uint32_t mntva_cvg_read(struct mntva_softc *sc, uint32_t reg);
 static void mntva_write(struct mntva_softc *sc, uint32_t reg, uint32_t val);
 
-static bool mntva_videomode_set(struct mntva_softc *sc);
+static bool mntva_mode_set(struct mntva_softc *sc);
 
 static paddr_t mntva_mmap(void *v, void *vs, off_t offset, int prot);
 static int mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag,
@@ -152,8 +150,7 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	aprint_normal_dev(sc->sc_dev, "setting %dx%d %d bpp resolution\n",
 	    sc->sc_width, sc->sc_height, sc->sc_bpp);
 
-	sc->sc_videomode = pick_mode_by_ref(sc->sc_width, sc->sc_height, 60);
-	mntva_videomode_set(sc);
+	mntva_mode_set(sc);
 
 	sc->sc_defaultscreen_descr = (struct wsscreen_descr) {
 	"default",
@@ -236,7 +233,7 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 }
 
 static bool
-mntva_videomode_set(struct mntva_softc *sc)
+mntva_mode_set(struct mntva_softc *sc)
 {
 	mntva_write(sc, MNTVA_SCALEMODE, 0);
 	mntva_write(sc, MNTVA_SCREENW, sc->sc_width);
