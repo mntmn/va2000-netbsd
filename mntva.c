@@ -1,7 +1,7 @@
-/*  $NetBSD$  */
+/*	$NetBSD$	*/
 
 /*
- * Copyright (c) 2012, 2016 The NetBSD Foundation, Inc.   
+ * Copyright (c) 2012, 2016 The NetBSD Foundation, Inc.		
  * All rights reserved.
  *
  * This code is derived from software contributed to The NetBSD Foundation
@@ -13,10 +13,10 @@
  * modification, are permitted provided that the following conditions
  * are met:
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ *		notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ *		notice, this list of conditions and the following disclaimer in the
+ *		documentation and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -32,7 +32,7 @@
 
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0,
-    "$NetBSD$");
+		"$NetBSD$");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -55,30 +55,30 @@ __KERNEL_RCSID(0,
 static int mntva_match(device_t, cfdata_t, void *);
 static void mntva_attach(device_t, device_t, void *);
 
-//static uint32_t mntva_reg_read(struct mntva_softc *sc, uint32_t reg);
+static uint16_t mntva_reg_read(struct mntva_softc *sc, uint32_t reg);
 static void mntva_reg_write(struct mntva_softc *sc, uint32_t reg, uint32_t val);
 
 static bool mntva_mode_set(struct mntva_softc *sc);
 
 static paddr_t mntva_mmap(void *v, void *vs, off_t offset, int prot);
 static int mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag,
-    struct lwp *l);
+		struct lwp *l);
 static void mntva_init_screen(void *cookie, struct vcons_screen *scr,
-    int existing, long *defattr);
-//static void mntva_init_palette(struct mntva_softc *sc);
+		int existing, long *defattr);
+static void mntva_init_palette(struct mntva_softc *sc);
 /* blitter support */
 static void mntva_rectfill(struct mntva_softc *sc, int x, int y, int wi,
-    int he, uint32_t color);
-/*static void mntva_bitblt(struct mntva_softc *sc, int xs, int ys, int xd, 
-int yd, int wi, int he);*/
+		int he, uint32_t color);
+static void mntva_bitblt(struct mntva_softc *sc, int xs, int ys, int xd, 
+int yd, int wi, int he);
 
 /* accelerated raster ops */
-/*static void mntva_eraserows(void *cookie, int row, int nrows, 
-        long fillattr);
-static void mntva_copyrows(void *cookie, int srcrow, int dstrow, int nrows);*/
+static void mntva_eraserows(void *cookie, int row, int nrows, 
+				long fillattr);
+static void mntva_copyrows(void *cookie, int srcrow, int dstrow, int nrows);
 
 CFATTACH_DECL_NEW(mntva, sizeof(struct mntva_softc),
-    mntva_match, mntva_attach, NULL, NULL);
+		mntva_match, mntva_attach, NULL, NULL);
 
 struct wsdisplay_accessops mntva_accessops = {
 	mntva_ioctl,
@@ -137,28 +137,28 @@ mntva_attach(device_t parent, device_t self, void *aux)
 
 	/* print the physical and virt addresses for registers and fb */
 	aprint_normal_dev(sc->sc_dev, 
-	    "registers at pa/va 0x%08x/0x%08x, fb at pa/va 0x%08x/0x%08x\n",
-	    (uint32_t) sc->sc_regpa,
-	    (uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_regh), 
-	    (uint32_t) sc->sc_fbpa,
-	    (uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_fbh));
+			"registers at pa/va 0x%08x/0x%08x, fb at pa/va 0x%08x/0x%08x\n",
+			(uint32_t) sc->sc_regpa,
+			(uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_regh), 
+			(uint32_t) sc->sc_fbpa,
+			(uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_fbh));
 
 	sc->sc_width = 1280;
 	sc->sc_height = 720;
-	sc->sc_bpp = 16;
+	sc->sc_bpp = 8;
 	sc->sc_linebytes = 4096;
 
 	aprint_normal_dev(sc->sc_dev, "%zu kB framebuffer memory present\n",
-	    sc->sc_memsize / 1024);
+			sc->sc_memsize / 1024);
 
 	aprint_normal_dev(sc->sc_dev, "setting %dx%d %d bpp resolution\n",
-	    sc->sc_width, sc->sc_height, sc->sc_bpp);
+			sc->sc_width, sc->sc_height, sc->sc_bpp);
 
 	mntva_mode_set(sc);
 
 	sc->sc_defaultscreen_descr = (struct wsscreen_descr) {
-	    "default", 0, 0, NULL, 8, 16, 
-	    WSSCREEN_WSCOLORS | WSSCREEN_HILIT, NULL };
+			"default", 0, 0, NULL, 8, 16, 
+			WSSCREEN_WSCOLORS | WSSCREEN_HILIT, NULL };
 	sc->sc_screens[0] = &sc->sc_defaultscreen_descr;
 	sc->sc_screenlist = (struct wsscreen_list) { 1, sc->sc_screens };
 	sc->sc_mode = WSDISPLAYIO_MODE_EMUL;
@@ -168,12 +168,29 @@ mntva_attach(device_t parent, device_t self, void *aux)
 
 	ri = &sc->sc_console_screen.scr_ri;
 
-	if (sc->sc_console_screen.scr_ri.ri_rows == 0) {
+	mntva_init_palette(sc);
+	
+	vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1,
+										&defattr);
+
+	sc->sc_console_screen.scr_flags |= VCONS_SCREEN_IS_STATIC; 
+	vcons_redraw_screen(&sc->sc_console_screen);
+
+	sc->sc_defaultscreen_descr.textops = &ri->ri_ops;
+	sc->sc_defaultscreen_descr.capabilities = ri->ri_caps;
+	sc->sc_defaultscreen_descr.nrows = ri->ri_rows;
+	sc->sc_defaultscreen_descr.ncols = ri->ri_cols;
+
+	wsdisplay_cnattach(&sc->sc_defaultscreen_descr, ri, 0, 0,
+										 defattr);
+	vcons_replay_msgbuf(&sc->sc_console_screen);
+
+	/*if (sc->sc_console_screen.scr_ri.ri_rows == 0) {
 		vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1, &defattr);
 	} else
-		(*ri->ri_ops.allocattr) (ri, 0, 0, 0, &defattr);
+	(*ri->ri_ops.allocattr) (ri, 0, 0, 0, &defattr);*/
 
-	ws_aa.console = false;
+	ws_aa.console = true;
 	ws_aa.scrdata = &sc->sc_screenlist;
 	ws_aa.accessops = &mntva_accessops;
 	ws_aa.accesscookie = &sc->vd;
@@ -181,23 +198,23 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	config_found(sc->sc_dev, &ws_aa, wsemuldisplaydevprint);
 }
 
-/*static void
+static void
 mntva_init_palette(struct mntva_softc *sc)
 {
-  //int i, j;
+	int i, j;
 
-  j = 0;
-  for (i = 0; i < 256; i++) {
-    sc->sc_cmap_red[i] = rasops_cmap[j];
-    sc->sc_cmap_green[i] = rasops_cmap[j + 1];
-    sc->sc_cmap_blue[i] = rasops_cmap[j + 2];
-    j += 3;
-    }
-}*/
+	j = 0;
+	for (i=0; i<256; i++) {
+		mntva_reg_write(sc, 0x200+i*2, rasops_cmap[j]);
+		mntva_reg_write(sc, 0x400+i*2, rasops_cmap[j+1]);
+		mntva_reg_write(sc, 0x600+i*2, rasops_cmap[j+2]);
+		j+=3;
+	}
+}
 
 static void
 mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
-    long *defattr)
+		long *defattr)
 {
 	struct mntva_softc *sc = cookie;
 	struct rasops_info *ri = &scr->scr_ri;
@@ -208,16 +225,11 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 	ri->ri_width = sc->sc_width;
 	ri->ri_height = sc->sc_height;
 	ri->ri_stride = sc->sc_linebytes;
-	ri->ri_flg = RI_CENTER;
+	ri->ri_flg = 0; //RI_CENTER;
 
-#if BYTE_ORDER == BIG_ENDIAN
-#if 0
-	if (sc->sc_bpp == 16)
-		ri->ri_flg |= RI_BITSWAP;
-#endif
-#endif
+	//ri->ri_flg = RI_BSWAP;
 
-	ri->ri_bits = (char *) bus_space_vaddr(sc->sc_iot, 0);
+	ri->ri_bits = (char *) bus_space_vaddr(sc->sc_iot, sc->sc_fbh);
 	aprint_normal_dev(sc->sc_dev, "ri_bits: %p\n", ri->ri_bits);
 
 	scr->scr_flags |= VCONS_DONT_READ;
@@ -225,12 +237,12 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 	rasops_init(ri, 0, 0);
 	ri->ri_caps = WSSCREEN_WSCOLORS;
 	rasops_reconfig(ri, sc->sc_height / ri->ri_font->fontheight,
-	    sc->sc_width / ri->ri_font->fontwidth);
+			sc->sc_width / ri->ri_font->fontwidth);
 
 	ri->ri_hw = scr;
 
-	//ri->ri_ops.eraserows = mntva_eraserows;
-	//ri->ri_ops.copyrows = mntva_copyrows;
+	ri->ri_ops.eraserows = mntva_eraserows;
+	ri->ri_ops.copyrows = mntva_copyrows;
 }
 
 static bool
@@ -240,100 +252,121 @@ mntva_mode_set(struct mntva_softc *sc)
 	mntva_reg_write(sc, MNTVA_SCREENW, sc->sc_width);
 	mntva_reg_write(sc, MNTVA_SCREENH, sc->sc_height);
 
-	if (sc->sc_bpp == 16)
+	if (sc->sc_bpp == 8)
+		mntva_reg_write(sc, MNTVA_COLORMODE, MNTVA_COLORMODE8);
+	else if (sc->sc_bpp == 16)
 		mntva_reg_write(sc, MNTVA_COLORMODE, MNTVA_COLORMODE16);
 	else if (sc->sc_bpp == 32)
 		mntva_reg_write(sc, MNTVA_COLORMODE, MNTVA_COLORMODE32);
 
+	mntva_reg_write(sc, MNTVA_PANPTRHI, 0);
+	mntva_reg_write(sc, MNTVA_PANPTRLO, 0);
+	mntva_reg_write(sc, MNTVA_BLITTERBASEHI, 0);
+	mntva_reg_write(sc, MNTVA_BLITTERBASELO, 0);
+	
 	mntva_rectfill(sc, 0, 0, sc->sc_width, sc->sc_height, 0xffffffff);
 
 	return true;
 }
 
-/*static uint32_t
+static uint16_t
 mntva_reg_read(struct mntva_softc *sc, uint32_t reg) 
 {
-  uint32_t rv;
-  rv = bus_space_read_2(sc->sc_iot, sc->sc_regh, reg);
-  return rv;
-}*/
+	uint32_t rv;
+	rv = bus_space_read_2(sc->sc_iot, sc->sc_regh, reg);
+	return rv;
+}
 
 static void
 mntva_reg_write(struct mntva_softc *sc, uint32_t reg, uint32_t val)
 {
-	aprint_normal("write val %x to reg %x\n", val, reg);
+	//aprint_normal("write val %x to reg %x\n", val, reg);
 	bus_space_write_2(sc->sc_iot, sc->sc_regh, reg, val);
 }
 
 static void
 mntva_rectfill(struct mntva_softc *sc, int x, int y, int wi, int he,
-    uint32_t color)
+		uint32_t color)
 {
-	mntva_reg_write(sc, MNTVA_COLORMODE, MNTVA_COLORMODE32); /* XXX */
 	mntva_reg_write(sc, MNTVA_BLITTERRGB, (uint16_t) color);
 	mntva_reg_write(sc, MNTVA_BLITTERX1, (uint16_t) x);
 	mntva_reg_write(sc, MNTVA_BLITTERY1, (uint16_t) y);
 	mntva_reg_write(sc, MNTVA_BLITTERX2, (uint16_t) x + wi - 1);
 	mntva_reg_write(sc, MNTVA_BLITTERY2, (uint16_t) y + he - 1);
 	mntva_reg_write(sc, MNTVA_BLITTER_ENABLE, MNTVA_BLITTER_FILL);
+
+	while(mntva_reg_read(sc, MNTVA_BLITTER_ENABLE)) {
+		// busy wait
+	}
 }
 
-/*
 static void
 mntva_bitblt(struct mntva_softc *sc, int xs, int ys, int xd, int yd, int wi,
-    int he) 
+		int he)
 {
-}*/
-/*
+	mntva_reg_write(sc, MNTVA_BLITTERX1, (uint16_t) xd);
+	mntva_reg_write(sc, MNTVA_BLITTERY1, (uint16_t) yd);
+	mntva_reg_write(sc, MNTVA_BLITTERX2, (uint16_t) xd + wi - 1);
+	mntva_reg_write(sc, MNTVA_BLITTERY2, (uint16_t) yd + he - 1);
+	mntva_reg_write(sc, MNTVA_BLITTERX3, (uint16_t) xs);
+	mntva_reg_write(sc, MNTVA_BLITTERY3, (uint16_t) ys);
+	mntva_reg_write(sc, MNTVA_BLITTERX4, (uint16_t) xs + wi - 1);
+	mntva_reg_write(sc, MNTVA_BLITTERY4, (uint16_t) ys + he - 1);
+	mntva_reg_write(sc, MNTVA_BLITTER_ENABLE, MNTVA_BLITTER_COPY);
+	
+	while(mntva_reg_read(sc, MNTVA_BLITTER_ENABLE)) {
+		// busy wait
+	}
+}
+
 static void
 mntva_copyrows(void *cookie, int srcrow, int dstrow, int nrows)
 {
-  struct mntva_softc *sc;
-  struct rasops_info *ri;
-  struct vcons_screen *scr;
-  int x, ys, yd, wi, he;
+	struct mntva_softc *sc;
+	struct rasops_info *ri;
+	struct vcons_screen *scr;
+	int x, ys, yd, wi, he;
 
-  ri = cookie;
-  scr = ri->ri_hw;
-  sc = scr->scr_cookie;
+	ri = cookie;
+	scr = ri->ri_hw;
+	sc = scr->scr_cookie;
 
-  if (sc->sc_mode == WSDISPLAYIO_MODE_EMUL) {
-    x = ri->ri_xorigin;
-    ys = ri->ri_yorigin + ri->ri_font->fontheight * srcrow;
-    yd = ri->ri_yorigin + ri->ri_font->fontheight * dstrow;
-    wi = ri->ri_emuwidth;
-    he = ri->ri_font->fontheight * nrows;
-    mntva_bitblt(sc, x, ys, x, yd, wi, he);
-  }
+	if (sc->sc_mode == WSDISPLAYIO_MODE_EMUL) {
+		x = ri->ri_xorigin;
+		ys = ri->ri_yorigin + ri->ri_font->fontheight * srcrow;
+		yd = ri->ri_yorigin + ri->ri_font->fontheight * dstrow;
+		wi = ri->ri_emuwidth;
+		he = ri->ri_font->fontheight * nrows;
+		mntva_bitblt(sc, x, ys, x, yd, wi, he);
+	}
 }
 
 static void
 mntva_eraserows(void *cookie, int row, int nrows, long fillattr)
 {
+	struct mntva_softc *sc;
+	struct rasops_info *ri;
+	struct vcons_screen *scr;
+	int x, y, wi, he, fg, bg, ul;
 
-  struct mntva_softc *sc;
-  struct rasops_info *ri;
-  struct vcons_screen *scr;
-  int x, y, wi, he, fg, bg, ul;
+	ri = cookie;
+	scr = ri->ri_hw;
+	sc = scr->scr_cookie;
 
-  ri = cookie;
-  scr = ri->ri_hw;
-  sc = scr->scr_cookie;
-
-  if (sc->sc_mode == WSDISPLAYIO_MODE_EMUL) {
-    rasops_unpack_attr(fillattr, &fg, &bg, &ul);
-    if ((row == 0) && (nrows == ri->ri_rows)) 
-      mntva_rectfill(sc, 0, 0, ri->ri_width,
-          ri->ri_height, ri->ri_devcmap[bg]);
-    else {
-      x = ri->ri_xorigin;
-      y = ri->ri_yorigin + ri->ri_font->fontheight * row;
-      wi = ri->ri_emuwidth;
-      he = ri->ri_font->fontheight * nrows;
-      mntva_rectfill(sc, x, y, wi, he, ri->ri_devcmap[bg]);
-    }
-  }
-  }*/
+	if (sc->sc_mode == WSDISPLAYIO_MODE_EMUL) {
+		rasops_unpack_attr(fillattr, &fg, &bg, &ul);
+		if ((row == 0) && (nrows == ri->ri_rows)) 
+			mntva_rectfill(sc, 0, 0, ri->ri_width,
+					ri->ri_height, ri->ri_devcmap[bg]);
+		else {
+			x = ri->ri_xorigin;
+			y = ri->ri_yorigin + ri->ri_font->fontheight * row;
+			wi = ri->ri_emuwidth;
+			he = ri->ri_font->fontheight * nrows;
+			mntva_rectfill(sc, x, y, wi, he, ri->ri_devcmap[bg]);
+		}
+	}
+}
 
 static int
 mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
@@ -352,9 +385,10 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 		*(u_int *) data = WSDISPLAY_TYPE_UNKNOWN;
 		return 0;
 
-		/*case WSDISPLAYIO_GET_BUSID:
-		 * return wsdisplayio_busid_pci(sc->sc_dev, sc->sc_pc,
-		 * sc->sc_pcitag, data); */
+	case WSDISPLAYIO_GET_BUSID:
+		busid = data;
+		busid->bus_type = WSDISPLAYIO_BUS_SOC;
+		return 0;
 
 	case WSDISPLAYIO_GINFO:
 		if (ms == NULL)
@@ -407,7 +441,7 @@ mntva_mmap(void *v, void *vs, off_t offset, int prot)
 
 	if (offset < sc->sc_memsize) {
 		pa = bus_space_mmap(sc->sc_iot, offset, 0, prot,
-		    BUS_SPACE_MAP_LINEAR);
+				BUS_SPACE_MAP_LINEAR);
 		return pa;
 	}
 

@@ -73,6 +73,34 @@
 #define MNTVA_COLORMODE 	0x48
 #define MNTVA_COLORMODE8		0
 #define MNTVA_COLORMODE16		__BIT(0)	
-#define MNTVA_COLORMODE32		__BIT(1)	
+#define MNTVA_COLORMODE32		__BIT(1)
+
+#define MNTVA_PANPTRHI 0x38 /* [23:16] */
+#define MNTVA_PANPTRLO 0x3A /* [15:0] */
+
+#define MNTVA_BLITTERX1		0x20
+#define MNTVA_BLITTERY1		0x22
+#define MNTVA_BLITTERX2		0x24
+#define MNTVA_BLITTERY2		0x26
+#define MNTVA_BLITTERRGB	0x28	/* filling for 16bit and 8bit modes */
+
+#define MNTVA_BLITTER_ENABLE	0x2A
+#define MNTVA_BLITTER_FILL		__BIT(0) /* fill [x1,y1]-[x2,y2] */
+#define MNTVA_BLITTER_COPY		__BIT(1) /* copy [x3,y3]-[x4,y4] to
+						         [x1,y1]-[x2,y2] */
+#define MNTVA_BLITTERX3		0x2C
+#define MNTVA_BLITTERY3		0x2E
+#define MNTVA_BLITTERX4		0x30
+#define MNTVA_BLITTERY4		0x32
+#define MNTVA_BLITTERRGB32HI	0x34	/* filling for 24bit and 32bit modes */
+#define MNTVA_BLITTERRGB32LO	0x36	/* filling for 24bit and 32bit modes */
+
+#define MNTVA_COLORMODE 	0x48
+#define MNTVA_COLORMODE8		0
+#define MNTVA_COLORMODE16		__BIT(0)	
+#define MNTVA_COLORMODE32		__BIT(1)
+
+#define MNTVA_PANPTRHI 0x38 /* [23:16] */
+#define MNTVA_PANPTRLO 0x3A /* [15:0] */
 
 #endif /* MNTVA2000REG_H */
