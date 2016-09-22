@@ -52,6 +52,9 @@ __KERNEL_RCSID(0,
 #include "opt_wsemul.h"
 //#include "opt_mntva.h"
 
+#include <dev/wsfb/genfbvar.h>
+#include "opt_wsfb.h"
+
 static int mntva_match(device_t, cfdata_t, void *);
 static void mntva_attach(device_t, device_t, void *);
 
@@ -145,7 +148,7 @@ mntva_attach(device_t parent, device_t self, void *aux)
 
 	sc->sc_width = 1280;
 	sc->sc_height = 720;
-	sc->sc_bpp = 8;
+	sc->sc_bpp = 16;
 	sc->sc_linebytes = 4096;
 
 	aprint_normal_dev(sc->sc_dev, "%zu kB framebuffer memory present\n",
@@ -170,7 +173,7 @@ mntva_attach(device_t parent, device_t self, void *aux)
 
 	mntva_init_palette(sc);
 	
-	vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1,
+	/*vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1,
 										&defattr);
 
 	sc->sc_console_screen.scr_flags |= VCONS_SCREEN_IS_STATIC; 
@@ -183,19 +186,22 @@ mntva_attach(device_t parent, device_t self, void *aux)
 
 	wsdisplay_cnattach(&sc->sc_defaultscreen_descr, ri, 0, 0,
 										 defattr);
-	vcons_replay_msgbuf(&sc->sc_console_screen);
+										 vcons_replay_msgbuf(&sc->sc_console_screen);*/
 
-	/*if (sc->sc_console_screen.scr_ri.ri_rows == 0) {
+	if (sc->sc_console_screen.scr_ri.ri_rows == 0) {
 		vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1, &defattr);
 	} else
-	(*ri->ri_ops.allocattr) (ri, 0, 0, 0, &defattr);*/
+	(*ri->ri_ops.allocattr) (ri, 0, 0, 0, &defattr);
 
-	ws_aa.console = true;
+	ws_aa.console = false;
 	ws_aa.scrdata = &sc->sc_screenlist;
 	ws_aa.accessops = &mntva_accessops;
 	ws_aa.accesscookie = &sc->vd;
 
-	config_found(sc->sc_dev, &ws_aa, wsemuldisplaydevprint);
+	//config_found(sc->sc_dev, &ws_aa, wsemuldisplaydevprint);
+	
+	config_found_ia(sc->sc_dev, "wsemuldisplaydev", &ws_aa,
+			wsemuldisplaydevprint);
 }
 
 static void
@@ -375,22 +381,28 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 	struct mntva_softc *sc;
 	struct wsdisplay_fbinfo *wsfbi;
 	struct vcons_screen *ms;
+	struct wsdisplayio_bus_id *busid;
 
 	vd = v;
 	sc = vd->cookie;
 	ms = vd->active;
+	
+	//aprint_normal_dev(sc->sc_dev, "mntva_ioctl cmd 0x%08x...",(uint32_t)cmd);
 
 	switch (cmd) {
 	case WSDISPLAYIO_GTYPE:
+		//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_GTYPE");
 		*(u_int *) data = WSDISPLAY_TYPE_UNKNOWN;
 		return 0;
 
 	case WSDISPLAYIO_GET_BUSID:
+		//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_GET_BUSID");
 		busid = data;
 		busid->bus_type = WSDISPLAYIO_BUS_SOC;
 		return 0;
 
 	case WSDISPLAYIO_GINFO:
+		//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_GINFO %p",ms);
 		if (ms == NULL)
 			return ENODEV;
 
@@ -402,12 +414,14 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 		return 0;
 
 	case WSDISPLAYIO_LINEBYTES:
+		//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_LINEBYTES");
 		*(u_int *) data = sc->sc_linebytes;
 		return 0;
 
 	case WSDISPLAYIO_SMODE:
 		{
 			int new_mode = *(int *) data;
+			//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_SMODE %d",new_mode);
 			if (new_mode != sc->sc_mode) {
 				sc->sc_mode = new_mode;
 				if (new_mode == WSDISPLAYIO_MODE_EMUL)
@@ -421,11 +435,14 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 			struct rasops_info *ri;
 			int ret;
 
+			//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_GET_FBINFO");
 			ri = &sc->vd.active->scr_ri;
 			ret = wsdisplayio_get_fbinfo(ri, fbi);
 			return ret;
 		}
 	}
+	//aprint_normal_dev(sc->sc_dev, "...EPASSTHROUGH");
+	
 	return EPASSTHROUGH;
 }
 
@@ -439,9 +456,12 @@ mntva_mmap(void *v, void *vs, off_t offset, int prot)
 	vd = v;
 	sc = vd->cookie;
 
+	//aprint_normal_dev(sc->sc_dev, "mntva_mmap offset 0x%08x...",(uint32_t)offset);
+
 	if (offset < sc->sc_memsize) {
-		pa = bus_space_mmap(sc->sc_iot, offset, 0, prot,
+		pa = bus_space_mmap(sc->sc_iot, sc->sc_fbh + offset, 0, prot,
 				BUS_SPACE_MAP_LINEAR);
+		//aprint_normal_dev(sc->sc_dev, "... pa: 0x%08x...",(uint32_t)pa);
 		return pa;
 	}
 
