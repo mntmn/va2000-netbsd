@@ -13,10 +13,10 @@
  * modification, are permitted provided that the following conditions
  * are met:
  * 1. Redistributions of source code must retain the above copyright
- *		notice, this list of conditions and the following disclaimer.
+ *	notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in the
- *		documentation and/or other materials provided with the distribution.
+ *	notice, this list of conditions and the following disclaimer in the
+ *	documentation and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -31,8 +31,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0,
-		"$NetBSD$");
+__KERNEL_RCSID(0, "$NetBSD$");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -65,19 +64,18 @@ static bool mntva_mode_set(struct mntva_softc *sc);
 
 static paddr_t mntva_mmap(void *v, void *vs, off_t offset, int prot);
 static int mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag,
-		struct lwp *l);
+	struct lwp *l);
 static void mntva_init_screen(void *cookie, struct vcons_screen *scr,
-		int existing, long *defattr);
+	int existing, long *defattr);
 static void mntva_init_palette(struct mntva_softc *sc);
 /* blitter support */
 static void mntva_rectfill(struct mntva_softc *sc, int x, int y, int wi,
-		int he, uint32_t color);
+	int he, uint32_t color);
 static void mntva_bitblt(struct mntva_softc *sc, int xs, int ys, int xd, 
 int yd, int wi, int he);
 
 /* accelerated raster ops */
-static void mntva_eraserows(void *cookie, int row, int nrows, 
-				long fillattr);
+static void mntva_eraserows(void *cookie, int row, int nrows, long fillattr);
 static void mntva_copyrows(void *cookie, int srcrow, int dstrow, int nrows);
 
 CFATTACH_DECL_NEW(mntva, sizeof(struct mntva_softc),
@@ -140,11 +138,11 @@ mntva_attach(device_t parent, device_t self, void *aux)
 
 	/* print the physical and virt addresses for registers and fb */
 	aprint_normal_dev(sc->sc_dev, 
-			"registers at pa/va 0x%08x/0x%08x, fb at pa/va 0x%08x/0x%08x\n",
-			(uint32_t) sc->sc_regpa,
-			(uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_regh), 
-			(uint32_t) sc->sc_fbpa,
-			(uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_fbh));
+		"registers at pa/va 0x%08x/0x%08x, fb at pa/va 0x%08x/0x%08x\n",
+		(uint32_t) sc->sc_regpa,
+		(uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_regh), 
+		(uint32_t) sc->sc_fbpa,
+		(uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_fbh));
 
 	sc->sc_width = 1280;
 	sc->sc_height = 720;
@@ -152,16 +150,16 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	sc->sc_linebytes = 4096;
 
 	aprint_normal_dev(sc->sc_dev, "%zu kB framebuffer memory present\n",
-			sc->sc_memsize / 1024);
+		sc->sc_memsize / 1024);
 
 	aprint_normal_dev(sc->sc_dev, "setting %dx%d %d bpp resolution\n",
-			sc->sc_width, sc->sc_height, sc->sc_bpp);
+		sc->sc_width, sc->sc_height, sc->sc_bpp);
 
 	mntva_mode_set(sc);
 
 	sc->sc_defaultscreen_descr = (struct wsscreen_descr) {
-			"default", 0, 0, NULL, 8, 16, 
-			WSSCREEN_WSCOLORS | WSSCREEN_HILIT, NULL };
+		"default", 0, 0, NULL, 8, 16, 
+		WSSCREEN_WSCOLORS | WSSCREEN_HILIT, NULL };
 	sc->sc_screens[0] = &sc->sc_defaultscreen_descr;
 	sc->sc_screenlist = (struct wsscreen_list) { 1, sc->sc_screens };
 	sc->sc_mode = WSDISPLAYIO_MODE_EMUL;
@@ -201,7 +199,7 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	//config_found(sc->sc_dev, &ws_aa, wsemuldisplaydevprint);
 	
 	config_found_ia(sc->sc_dev, "wsemuldisplaydev", &ws_aa,
-			wsemuldisplaydevprint);
+		wsemuldisplaydevprint);
 }
 
 static void
@@ -243,7 +241,7 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 	rasops_init(ri, 0, 0);
 	ri->ri_caps = WSSCREEN_WSCOLORS;
 	rasops_reconfig(ri, sc->sc_height / ri->ri_font->fontheight,
-			sc->sc_width / ri->ri_font->fontwidth);
+		sc->sc_width / ri->ri_font->fontwidth);
 
 	ri->ri_hw = scr;
 
@@ -363,7 +361,7 @@ mntva_eraserows(void *cookie, int row, int nrows, long fillattr)
 		rasops_unpack_attr(fillattr, &fg, &bg, &ul);
 		if ((row == 0) && (nrows == ri->ri_rows)) 
 			mntva_rectfill(sc, 0, 0, ri->ri_width,
-					ri->ri_height, ri->ri_devcmap[bg]);
+				ri->ri_height, ri->ri_devcmap[bg]);
 		else {
 			x = ri->ri_xorigin;
 			y = ri->ri_yorigin + ri->ri_font->fontheight * row;
@@ -460,7 +458,7 @@ mntva_mmap(void *v, void *vs, off_t offset, int prot)
 
 	if (offset < sc->sc_memsize) {
 		pa = bus_space_mmap(sc->sc_iot, sc->sc_fbh + offset, 0, prot,
-				BUS_SPACE_MAP_LINEAR);
+			BUS_SPACE_MAP_LINEAR);
 		//aprint_normal_dev(sc->sc_dev, "... pa: 0x%08x...",(uint32_t)pa);
 		return pa;
 	}
