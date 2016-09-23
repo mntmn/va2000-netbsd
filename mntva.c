@@ -77,6 +77,10 @@ int yd, int wi, int he);
 /* accelerated raster ops */
 static void mntva_eraserows(void *cookie, int row, int nrows, long fillattr);
 static void mntva_copyrows(void *cookie, int srcrow, int dstrow, int nrows);
+static void mntva_copycols(void *cookie, int row, int srccol, int dstcol, 
+	int ncols);
+static void mntva_erasecols(void *cookie, int row, int startcol, int ncols,
+	long fillattr);
 
 CFATTACH_DECL_NEW(mntva, sizeof(struct mntva_softc),
 		mntva_match, mntva_attach, NULL, NULL);
@@ -247,6 +251,8 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 
 	ri->ri_ops.eraserows = mntva_eraserows;
 	ri->ri_ops.copyrows = mntva_copyrows;
+	ri->ri_ops.erasecols = mntva_erasecols;
+	ri->ri_ops.copycols = mntva_copycols;
 }
 
 static bool
@@ -369,6 +375,51 @@ mntva_eraserows(void *cookie, int row, int nrows, long fillattr)
 			he = ri->ri_font->fontheight * nrows;
 			mntva_rectfill(sc, x, y, wi, he, ri->ri_devcmap[bg]);
 		}
+	}
+}
+
+static void
+mntva_copycols(void *cookie, int row, int srccol, int dstcol, int ncols)
+{
+	struct mntva_softc *sc;
+	struct rasops_info *ri;
+	struct vcons_screen *scr;
+	int xs, xd, y, w, h;
+
+	ri = cookie;
+	scr = ri->ri_hw;
+	sc = scr->scr_cookie;
+
+	if (sc->sc_mode == WSDISPLAYIO_MODE_EMUL) {
+		xs = ri->ri_xorigin + ri->ri_font->fontwidth * srccol;
+		xd = ri->ri_xorigin + ri->ri_font->fontwidth * dstcol;
+		y = ri->ri_yorigin + ri->ri_font->fontheight * row;
+		w = ri->ri_font->fontwidth * ncols;
+		h = ri->ri_font->fontheight;
+		mntva_bitblt(sc, xs, y, xd, y, w, h);
+	}
+
+}
+
+static void
+mntva_erasecols(void *cookie, int row, int startcol, int ncols, long fillattr)
+{
+	struct mntva_softc *sc;
+	struct rasops_info *ri;
+	struct vcons_screen *scr;
+	int x, y, w, h, fg, bg, ul;
+
+	ri = cookie;
+	scr = ri->ri_hw;
+	sc = scr->scr_cookie;
+
+	if (sc->sc_mode == WSDISPLAYIO_MODE_EMUL) {
+		x = ri->ri_xorigin + ri->ri_font->fontwidth * startcol;
+		y = ri->ri_yorigin + ri->ri_font->fontheight * row;
+		w = ri->ri_font->fontwidth * ncols;
+		h = ri->ri_font->fontheight;
+		rasops_unpack_attr(fillattr, &fg, &bg, &ul);
+		mntva_rectfill(sc, x, y, w, h, ri->ri_devcmap[bg & 0xf]);
 	}
 }
 
