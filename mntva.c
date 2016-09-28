@@ -81,6 +81,7 @@ static void mntva_copycols(void *cookie, int row, int srccol, int dstcol,
 	int ncols);
 static void mntva_erasecols(void *cookie, int row, int startcol, int ncols,
 	long fillattr);
+static void mntva_cursor(void *cookie, int on, int row, int col);
 
 CFATTACH_DECL_NEW(mntva, sizeof(struct mntva_softc),
 		mntva_match, mntva_attach, NULL, NULL);
@@ -253,6 +254,7 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 	ri->ri_ops.copyrows = mntva_copyrows;
 	ri->ri_ops.erasecols = mntva_erasecols;
 	ri->ri_ops.copycols = mntva_copycols;
+	ri->ri_ops.cursor = mntva_cursor;
 }
 
 static bool
@@ -493,6 +495,43 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 	//aprint_normal_dev(sc->sc_dev, "...EPASSTHROUGH");
 	
 	return EPASSTHROUGH;
+}
+
+static void
+mntva_cursor(void *cookie, int on, int row, int col)
+{
+	struct mntva_softc *sc;
+	struct rasops_info *ri;
+	struct vcons_screen *scr;
+	int x, y, wi, he;
+
+	ri = cookie;
+	scr = ri->ri_hw;
+	sc = scr->scr_cookie;
+
+	wi = ri->ri_font->fontwidth;
+	he = ri->ri_font->fontheight;
+
+	if (sc->sc_mode == WSDISPLAYIO_MODE_EMUL) {
+		x = ri->ri_ccol * wi + ri->ri_xorigin;
+		y = ri->ri_crow * he + ri->ri_yorigin;
+		if (ri->ri_flg & RI_CURSOR) {
+			mntva_bitblt(sc, x, y, x, y, wi, he);
+			ri->ri_flg &= ~RI_CURSOR;
+		}
+		ri->ri_crow = row;
+		ri->ri_ccol = col;
+		if (on) {
+			x = ri->ri_ccol * wi + ri->ri_xorigin;
+			y = ri->ri_crow * he + ri->ri_yorigin;
+			mntva_bitblt(sc, x, y, x, y, wi, he);
+			ri->ri_flg |= RI_CURSOR;
+		}
+	} else {
+		scr->scr_ri.ri_crow = row;
+		scr->scr_ri.ri_ccol = col;
+		scr->scr_ri.ri_flg &= ~RI_CURSOR;
+	}
 }
 
 static paddr_t
