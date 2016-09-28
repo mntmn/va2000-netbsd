@@ -524,7 +524,7 @@ mntva_cursor(void *cookie, int on, int row, int col)
 		if (on) {
 			x = ri->ri_ccol * wi + ri->ri_xorigin;
 			y = ri->ri_crow * he + ri->ri_yorigin;
-			mnvta_bitblt(sc, x, y, x, y, wi, he);
+			mntva_bitblt(sc, x, y, x, y, wi, he);
 			ri->ri_flg |= RI_CURSOR;
 		}
 	} else {
