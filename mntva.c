@@ -55,6 +55,8 @@ __KERNEL_RCSID(0,
 #include <dev/wsfb/genfbvar.h>
 #include "opt_wsfb.h"
 
+//#define MNTVA_CONSOLE 1
+
 static int mntva_match(device_t, cfdata_t, void *);
 static void mntva_attach(device_t, device_t, void *);
 
@@ -113,9 +115,9 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	struct mntva_softc *sc = device_private(self);
 	struct wsemuldisplaydev_attach_args ws_aa;
 	struct rasops_info *ri;
-	long defattr;
-
 	struct zbus_args *zap = aux;
+	bool console = true;
+	long defattr;
 
 	sc->sc_dev = self;
 	sc->sc_memsize = MNTVA_FB_SIZE;
@@ -172,36 +174,36 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	ri = &sc->sc_console_screen.scr_ri;
 
 	mntva_init_palette(sc);
-	
-	/*vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1,
-										&defattr);
 
-	sc->sc_console_screen.scr_flags |= VCONS_SCREEN_IS_STATIC; 
-	vcons_redraw_screen(&sc->sc_console_screen);
+	if (console) {
+		vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1,
+				&defattr);
 
-	sc->sc_defaultscreen_descr.textops = &ri->ri_ops;
-	sc->sc_defaultscreen_descr.capabilities = ri->ri_caps;
-	sc->sc_defaultscreen_descr.nrows = ri->ri_rows;
-	sc->sc_defaultscreen_descr.ncols = ri->ri_cols;
+		sc->sc_console_screen.scr_flags |= VCONS_SCREEN_IS_STATIC; 
+		vcons_redraw_screen(&sc->sc_console_screen);
 
-	wsdisplay_cnattach(&sc->sc_defaultscreen_descr, ri, 0, 0,
-										 defattr);
-										 vcons_replay_msgbuf(&sc->sc_console_screen);*/
+		sc->sc_defaultscreen_descr.textops = &ri->ri_ops;
+		sc->sc_defaultscreen_descr.capabilities = ri->ri_caps;
+		sc->sc_defaultscreen_descr.nrows = ri->ri_rows;
+		sc->sc_defaultscreen_descr.ncols = ri->ri_cols;
 
-	if (sc->sc_console_screen.scr_ri.ri_rows == 0) {
-		vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1, &defattr);
-	} else
-	(*ri->ri_ops.allocattr) (ri, 0, 0, 0, &defattr);
+		wsdisplay_cnattach(&sc->sc_defaultscreen_descr, ri, 0, 0,
+				defattr);
+		vcons_replay_msgbuf(&sc->sc_console_screen);
+	} else {
+		if (sc->sc_console_screen.scr_ri.ri_rows == 0) {
+			vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1,
+					&defattr);
+		} else
+			(*ri->ri_ops.allocattr)(ri, 0, 0, 0, &defattr);
+	}
 
 	ws_aa.console = false;
 	ws_aa.scrdata = &sc->sc_screenlist;
 	ws_aa.accessops = &mntva_accessops;
 	ws_aa.accesscookie = &sc->vd;
 
-	//config_found(sc->sc_dev, &ws_aa, wsemuldisplaydevprint);
-	
-	config_found_ia(sc->sc_dev, "wsemuldisplaydev", &ws_aa,
-			wsemuldisplaydevprint);
+	config_found(sc->sc_dev, &ws_aa, wsemuldisplaydevprint);
 }
 
 static void
@@ -457,10 +459,9 @@ mntva_mmap(void *v, void *vs, off_t offset, int prot)
 	sc = vd->cookie;
 
 	//aprint_normal_dev(sc->sc_dev, "mntva_mmap offset 0x%08x...",(uint32_t)offset);
-
-	if (offset < sc->sc_memsize) {
-		pa = bus_space_mmap(sc->sc_iot, sc->sc_fbh + offset, 0, prot,
-				BUS_SPACE_MAP_LINEAR);
+	if (offset >= 0 && offset < sc->sc_memsize) {
+		pa = bus_space_mmap(sc->sc_iot, sc->sc_fbh, offset, prot,
+												BUS_SPACE_MAP_LINEAR);
 		//aprint_normal_dev(sc->sc_dev, "... pa: 0x%08x...",(uint32_t)pa);
 		return pa;
 	}
