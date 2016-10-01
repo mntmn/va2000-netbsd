@@ -20,6 +20,8 @@ defflag	opt_amigacons.h		RETINACONSOLE ULOWELLCONSOLE CL5426CONSOLE
 defflag	opt_amigacons.h		CV64CONSOLE CV3DCONSOLE TSENGCONSOLE
 defflag	opt_amigacons.h		SERCONSOLE
 
+defflag opt_mntva.h		MNTVA_CONSOLE
+
 defflag	opt_kfont.h		KFONT_CONS_ISO8859_1
 defflag	opt_kfont.h		KFONT_CONS_ISO8859_2
 

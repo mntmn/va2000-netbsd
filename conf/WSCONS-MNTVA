@@ -51,6 +51,7 @@ voodoofb*	at pci?			# 3Dfx Voodoo 3 in G-REX
 #radeonfb*	at pci?			# untested
 
 mntva*		at zbus?		# MNTMN VA2000
+options		MNTVA_CONSOLE
 
 # Console support for CyberVisionPPC, BlizzardVisionPPC and 3Dfx Voodoo 3 in 
 # G-REX.
