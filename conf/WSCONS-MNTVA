@@ -21,7 +21,7 @@ wsmouse*	at ms?
 ums*		at uhidev? reportid ? 
 wsmouse*	at ums?
 
-amidisplaycc0	at mainbus0		# wscons interface to custom chips
+#amidisplaycc0	at mainbus0		# wscons interface to custom chips
 
 # Disable grf(4) devices without wsdisplay support.
 no grfcc0	at mainbus0
