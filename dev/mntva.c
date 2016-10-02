@@ -86,7 +86,7 @@ static void mntva_copycols(void *cookie, int row, int srccol, int dstcol,
     int ncols);
 static void mntva_erasecols(void *cookie, int row, int startcol, int ncols,
     long fillattr);
-static void mntva_cursor(void *cookie, int on, int row, int col);
+//static void mntva_cursor(void *cookie, int on, int row, int col);
 
 /*
  * XXX: these will be called by console handling code, shouldn't they be 
@@ -207,7 +207,7 @@ mntva_attach(device_t parent, device_t self, void *aux)
 		vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1,
 				&defattr);
 
-		sc->sc_console_screen.scr_flags |= VCONS_SCREEN_IS_STATIC; 
+		sc->sc_console_screen.scr_flags = VCONS_SCREEN_IS_STATIC; 
 		vcons_redraw_screen(&sc->sc_console_screen);
 
 		sc->sc_defaultscreen_descr.textops = &ri->ri_ops;
@@ -281,7 +281,7 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 	ri->ri_ops.copyrows = mntva_copyrows;
 	ri->ri_ops.erasecols = mntva_erasecols;
 	ri->ri_ops.copycols = mntva_copycols;
-	ri->ri_ops.cursor = mntva_cursor;
+	//ri->ri_ops.cursor = mntva_cursor;
 }
 
 static bool
@@ -465,7 +465,7 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 	sc = vd->cookie;
 	ms = vd->active;
 	
-	//aprint_normal_dev(sc->sc_dev, "mntva_ioctl cmd 0x%08x...",(uint32_t)cmd);
+	aprint_normal_dev(sc->sc_dev, "mntva_ioctl cmd 0x%08x\n",(uint32_t)cmd);
 
 	switch (cmd) {
 	case WSDISPLAYIO_GTYPE:
@@ -524,7 +524,7 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 	return EPASSTHROUGH;
 }
 
-static void
+/*static void
 mntva_cursor(void *cookie, int on, int row, int col)
 {
 	struct mntva_softc *sc;
@@ -559,7 +559,7 @@ mntva_cursor(void *cookie, int on, int row, int col)
 		scr->scr_ri.ri_ccol = col;
 		scr->scr_ri.ri_flg &= ~RI_CURSOR;
 	}
-}
+}*/
 
 static paddr_t
 mntva_mmap(void *v, void *vs, off_t offset, int prot)
@@ -571,13 +571,15 @@ mntva_mmap(void *v, void *vs, off_t offset, int prot)
 	vd = v;
 	sc = vd->cookie;
 
-	//aprint_normal_dev(sc->sc_dev, "mntva_mmap offset 0x%08x...",(uint32_t)offset);
+	aprint_normal_dev(sc->sc_dev, "mntva_mmap@0x%08x... ",(uint32_t)offset);
 	if (offset >= 0 && offset < sc->sc_memsize) {
 		pa = bus_space_mmap(sc->sc_iot, sc->sc_fbh, offset, prot,
 			BUS_SPACE_MAP_LINEAR);
-		//aprint_normal_dev(sc->sc_dev, "... pa: 0x%08x...",(uint32_t)pa);
+		aprint_normal_dev(sc->sc_dev, "OK\n");
 		return pa;
-	}
+	} else {
+		aprint_normal_dev(sc->sc_dev, "FAIL\n");
+  }
 
 	return -1;
 }
