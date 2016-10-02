@@ -154,8 +154,8 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	sc->sc_bst.absm = &amiga_bus_stride_1;
 	sc->sc_iot = &sc->sc_bst;
 
-	if (bus_space_map(sc->sc_iot, MNTVA_OFF_FB, sc->sc_memsize + 0x1000, 0,
-	    &sc->sc_fbh)) {
+	if (bus_space_map(sc->sc_iot, MNTVA_OFF_FB, sc->sc_memsize + 0x1000,
+	    BUS_SPACE_MAP_LINEAR, &sc->sc_fbh)) {
 		aprint_error_dev(sc->sc_dev, "mapping framebuffer failed\n");
 		return;
 	}
@@ -573,13 +573,14 @@ mntva_mmap(void *v, void *vs, off_t offset, int prot)
 
 	aprint_normal_dev(sc->sc_dev, "mntva_mmap@0x%08x... ",(uint32_t)offset);
 	if (offset >= 0 && offset < sc->sc_memsize) {
-		pa = bus_space_mmap(sc->sc_iot, sc->sc_fbh, offset, prot,
+		/* looks like mmap requires _physical_ address as an argument? */
+		pa = bus_space_mmap(sc->sc_iot, sc->sc_fbpa, offset, prot,
 			BUS_SPACE_MAP_LINEAR);
-		aprint_normal_dev(sc->sc_dev, "OK\n");
+		aprint_normal_dev(sc->sc_dev, "OK pa=0x%08x\n");
 		return pa;
 	} else {
 		aprint_normal_dev(sc->sc_dev, "FAIL\n");
-  }
+	}
 
 	return -1;
 }
