@@ -176,9 +176,9 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	    (uint32_t) sc->sc_fbpa,
 	    (uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_fbh));
 
-	sc->sc_width = 1280;
-	sc->sc_height = 720;
-	sc->sc_bpp = 16;
+	sc->sc_width = 640;
+	sc->sc_height = 480;
+	sc->sc_bpp = 8;
 	sc->sc_linebytes = 4096;
 
 	aprint_normal_dev(sc->sc_dev, "%zu kB framebuffer memory present\n",
@@ -207,7 +207,7 @@ mntva_attach(device_t parent, device_t self, void *aux)
 		vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1,
 				&defattr);
 
-		sc->sc_console_screen.scr_flags = VCONS_SCREEN_IS_STATIC; 
+		sc->sc_console_screen.scr_flags = 0; 
 		vcons_redraw_screen(&sc->sc_console_screen);
 
 		sc->sc_defaultscreen_descr.textops = &ri->ri_ops;
@@ -268,7 +268,7 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 	ri->ri_bits = (char *) bus_space_vaddr(sc->sc_iot, sc->sc_fbh);
 	aprint_normal_dev(sc->sc_dev, "ri_bits: %p\n", ri->ri_bits);
 
-	scr->scr_flags |= VCONS_DONT_READ;
+	scr->scr_flags = 0;
 
 	rasops_init(ri, 0, 0);
 	ri->ri_caps = WSSCREEN_WSCOLORS;
