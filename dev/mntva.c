@@ -176,9 +176,9 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	    (uint32_t) sc->sc_fbpa,
 	    (uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_fbh));
 
-	sc->sc_width = 640;
-	sc->sc_height = 480;
-	sc->sc_bpp = 8;
+	sc->sc_width = 1280;
+	sc->sc_height = 720;
+	sc->sc_bpp = 16;
 	sc->sc_linebytes = 4096;
 
 	aprint_normal_dev(sc->sc_dev, "%zu kB framebuffer memory present\n",
@@ -207,7 +207,7 @@ mntva_attach(device_t parent, device_t self, void *aux)
 		vcons_init_screen(&sc->vd, &sc->sc_console_screen, 1,
 				&defattr);
 
-		sc->sc_console_screen.scr_flags = 0; 
+		sc->sc_console_screen.scr_flags = VCONS_SCREEN_IS_STATIC;
 		vcons_redraw_screen(&sc->sc_console_screen);
 
 		sc->sc_defaultscreen_descr.textops = &ri->ri_ops;
@@ -261,14 +261,14 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 	ri->ri_width = sc->sc_width;
 	ri->ri_height = sc->sc_height;
 	ri->ri_stride = sc->sc_linebytes;
-	ri->ri_flg = 0; //RI_CENTER;
+	ri->ri_flg = 0;
 
 	//ri->ri_flg = RI_BSWAP;
 
 	ri->ri_bits = (char *) bus_space_vaddr(sc->sc_iot, sc->sc_fbh);
 	aprint_normal_dev(sc->sc_dev, "ri_bits: %p\n", ri->ri_bits);
 
-	scr->scr_flags = 0;
+	scr->scr_flags = VCONS_SCREEN_IS_STATIC;
 
 	rasops_init(ri, 0, 0);
 	ri->ri_caps = WSSCREEN_WSCOLORS;
@@ -319,7 +319,6 @@ mntva_reg_read(struct mntva_softc *sc, uint32_t reg)
 static void
 mntva_reg_write(struct mntva_softc *sc, uint32_t reg, uint32_t val)
 {
-	//aprint_normal("write val %x to reg %x\n", val, reg);
 	bus_space_write_2(sc->sc_iot, sc->sc_regh, reg, val);
 }
 
@@ -465,8 +464,6 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 	sc = vd->cookie;
 	ms = vd->active;
 	
-	aprint_normal_dev(sc->sc_dev, "mntva_ioctl cmd 0x%08x\n",(uint32_t)cmd);
-
 	switch (cmd) {
 	case WSDISPLAYIO_GTYPE:
 		//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_GTYPE");
@@ -571,12 +568,10 @@ mntva_mmap(void *v, void *vs, off_t offset, int prot)
 	vd = v;
 	sc = vd->cookie;
 
-	aprint_normal_dev(sc->sc_dev, "mntva_mmap@0x%08x... ",(uint32_t)offset);
 	if (offset >= 0 && offset < sc->sc_memsize) {
 		/* looks like mmap requires _physical_ address as an argument? */
 		pa = bus_space_mmap(sc->sc_iot, sc->sc_fbpa, offset, prot,
 			BUS_SPACE_MAP_LINEAR);
-		aprint_normal_dev(sc->sc_dev, "OK pa=0x%08x\n");
 		return pa;
 	} else {
 		aprint_normal_dev(sc->sc_dev, "FAIL\n");
