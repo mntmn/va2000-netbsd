@@ -59,6 +59,8 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include "mntva.h"
 
+/* #define MNTVA_DEBUG 1 */
+
 static int mntva_match(device_t, cfdata_t, void *);
 static void mntva_attach(device_t, device_t, void *);
 
@@ -86,7 +88,9 @@ static void mntva_copycols(void *cookie, int row, int srccol, int dstcol,
     int ncols);
 static void mntva_erasecols(void *cookie, int row, int startcol, int ncols,
     long fillattr);
-//static void mntva_cursor(void *cookie, int on, int row, int col);
+#if 0
+static void mntva_cursor(void *cookie, int on, int row, int col);
+#endif 
 
 /*
  * XXX: these will be called by console handling code, shouldn't they be 
@@ -118,7 +122,10 @@ mntva_match(device_t parent, cfdata_t match, void *aux)
 	struct zbus_args *zap = aux;
 
 	if (zap->manid == 0x6d6e && zap->prodid == 1) {
-		//aprint_normal("mntva_match... success!\n"); // XXX: might not work during console init?
+#ifdef MNTVA_DEBUG
+		/* XXX: this might not work during console init? */
+		aprint_normal("mntva_match... success!\n"); 
+#endif /* MNTVA_DEBUG */
 		return 1;
 	}
 
@@ -263,10 +270,12 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 	ri->ri_stride = sc->sc_linebytes;
 	ri->ri_flg = 0;
 
-	//ri->ri_flg = RI_BSWAP;
+	/*ri->ri_flg = RI_BSWAP;*/
 
 	ri->ri_bits = (char *) bus_space_vaddr(sc->sc_iot, sc->sc_fbh);
+#ifdef MNTVA_DEBUG
 	aprint_normal_dev(sc->sc_dev, "ri_bits: %p\n", ri->ri_bits);
+#endif /* MNTVA_DEBUG */
 
 	scr->scr_flags = VCONS_SCREEN_IS_STATIC;
 
@@ -281,7 +290,9 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 	ri->ri_ops.copyrows = mntva_copyrows;
 	ri->ri_ops.erasecols = mntva_erasecols;
 	ri->ri_ops.copycols = mntva_copycols;
-	//ri->ri_ops.cursor = mntva_cursor;
+#if 0
+	ri->ri_ops.cursor = mntva_cursor;
+#endif
 }
 
 static bool
@@ -303,6 +314,7 @@ mntva_mode_set(struct mntva_softc *sc)
 	mntva_reg_write(sc, MNTVA_BLITTERBASEHI, 0);
 	mntva_reg_write(sc, MNTVA_BLITTERBASELO, 0);
 	
+	/* XXX: should rectfill with bg color taken from wscons? */
 	mntva_rectfill(sc, 0, 0, sc->sc_width, sc->sc_height, 0xffffffff);
 
 	return true;
@@ -334,7 +346,7 @@ mntva_rectfill(struct mntva_softc *sc, int x, int y, int wi, int he,
 	mntva_reg_write(sc, MNTVA_BLITTER_ENABLE, MNTVA_BLITTER_FILL);
 
 	while(mntva_reg_read(sc, MNTVA_BLITTER_ENABLE)) {
-		// busy wait
+		/* busy wait */
 	}
 }
 
@@ -353,7 +365,7 @@ mntva_bitblt(struct mntva_softc *sc, int xs, int ys, int xd, int yd, int wi,
 	mntva_reg_write(sc, MNTVA_BLITTER_ENABLE, MNTVA_BLITTER_COPY);
 	
 	while(mntva_reg_read(sc, MNTVA_BLITTER_ENABLE)) {
-		// busy wait
+		/* busy wait */
 	}
 }
 
@@ -466,18 +478,15 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 	
 	switch (cmd) {
 	case WSDISPLAYIO_GTYPE:
-		//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_GTYPE");
 		*(u_int *) data = WSDISPLAY_TYPE_UNKNOWN;
 		return 0;
 
 	case WSDISPLAYIO_GET_BUSID:
-		//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_GET_BUSID");
 		busid = data;
 		busid->bus_type = WSDISPLAYIO_BUS_SOC;
 		return 0;
 
 	case WSDISPLAYIO_GINFO:
-		//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_GINFO %p",ms);
 		if (ms == NULL)
 			return ENODEV;
 
@@ -489,14 +498,12 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 		return 0;
 
 	case WSDISPLAYIO_LINEBYTES:
-		//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_LINEBYTES");
 		*(u_int *) data = sc->sc_linebytes;
 		return 0;
 
 	case WSDISPLAYIO_SMODE:
 		{
 			int new_mode = *(int *) data;
-			//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_SMODE %d",new_mode);
 			if (new_mode != sc->sc_mode) {
 				sc->sc_mode = new_mode;
 				if (new_mode == WSDISPLAYIO_MODE_EMUL)
@@ -510,18 +517,17 @@ mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag, struct lwp *l)
 			struct rasops_info *ri;
 			int ret;
 
-			//aprint_normal_dev(sc->sc_dev, "...WSDISPLAYIO_GET_FBINFO");
 			ri = &sc->vd.active->scr_ri;
 			ret = wsdisplayio_get_fbinfo(ri, fbi);
 			return ret;
 		}
 	}
-	//aprint_normal_dev(sc->sc_dev, "...EPASSTHROUGH");
 	
 	return EPASSTHROUGH;
 }
 
-/*static void
+#if 0
+static void
 mntva_cursor(void *cookie, int on, int row, int col)
 {
 	struct mntva_softc *sc;
@@ -556,7 +562,8 @@ mntva_cursor(void *cookie, int on, int row, int col)
 		scr->scr_ri.ri_ccol = col;
 		scr->scr_ri.ri_flg &= ~RI_CURSOR;
 	}
-}*/
+}
+#endif 
 
 static paddr_t
 mntva_mmap(void *v, void *vs, off_t offset, int prot)
@@ -569,13 +576,10 @@ mntva_mmap(void *v, void *vs, off_t offset, int prot)
 	sc = vd->cookie;
 
 	if (offset >= 0 && offset < sc->sc_memsize) {
-		/* looks like mmap requires _physical_ address as an argument? */
 		pa = bus_space_mmap(sc->sc_iot, sc->sc_fbpa, offset, prot,
 			BUS_SPACE_MAP_LINEAR);
 		return pa;
-	} else {
-		aprint_normal_dev(sc->sc_dev, "FAIL\n");
-	}
+	}	
 
 	return -1;
 }
