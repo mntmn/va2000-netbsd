@@ -193,8 +193,8 @@ static const struct aconfdata aconftab[] = {
 	{ "hyper3+",	5001,	7},	/* Hypercom3+ */
 	/* Matay Grzegorz Kraszewski */
 	{ "mppb",	44359,	1},	/* Prometheus PCI bridge */
-	/* MNTMN */
-	{ "mntva",	28014,	1}	/* MNTMN VA2000 */
+	/* MNT */
+	{ "mntva",	28014,	1}	/* MNT VA2000 */
 };
 static int naconfent = sizeof(aconftab) / sizeof(struct aconfdata);
 

@@ -77,7 +77,7 @@ static void mntva_init_palette(struct mntva_softc *sc);
 static void mntva_rectfill(struct mntva_softc *sc, int x, int y, int wi,
     int he, uint32_t color);
 static void mntva_bitblt(struct mntva_softc *sc, int xs, int ys, int xd, 
-    int yd, int wi, int he);
+int yd, int wi, int he);
 
 /* accelerated raster ops */
 static void mntva_eraserows(void *cookie, int row, int nrows, long fillattr);
@@ -85,7 +85,7 @@ static void mntva_copyrows(void *cookie, int srcrow, int dstrow, int nrows);
 static void mntva_copycols(void *cookie, int row, int srccol, int dstcol, 
     int ncols);
 static void mntva_erasecols(void *cookie, int row, int startcol, int ncols,
-    long fillattr);
+long fillattr);
 //static void mntva_cursor(void *cookie, int on, int row, int col);
 
 /*
@@ -140,7 +140,7 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	sc->sc_isconsole = true;
 #endif /* MNTVA_CONSOLE */
 
-	printf(": MNTMN VA2000");
+	printf(": MNT VA2000");
 
 	if(sc->sc_isconsole)
 		printf(" (console)");
@@ -154,14 +154,14 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	sc->sc_bst.absm = &amiga_bus_stride_1;
 	sc->sc_iot = &sc->sc_bst;
 
-	if (bus_space_map(sc->sc_iot, MNTVA_OFF_FB, sc->sc_memsize + 0x1000,
-	    BUS_SPACE_MAP_LINEAR, &sc->sc_fbh)) {
-		aprint_error_dev(sc->sc_dev, "mapping framebuffer failed\n");
-		return;
-	}
 	if (bus_space_map(sc->sc_iot, MNTVA_OFF_REG, MNTVA_REG_SIZE , 0,
 	    &sc->sc_regh)) {
 		aprint_error_dev(sc->sc_dev, "mapping registers failed\n");
+		return;
+	}
+	if (bus_space_map(sc->sc_iot, MNTVA_OFF_FB, sc->sc_memsize,
+	    BUS_SPACE_MAP_LINEAR, &sc->sc_fbh)) {
+		aprint_error_dev(sc->sc_dev, "mapping framebuffer failed\n");
 		return;
 	}
 
@@ -287,9 +287,25 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 static bool
 mntva_mode_set(struct mntva_softc *sc)
 {
+	mntva_reg_write(sc, MNTVA_CAPTURE_MODE, 0);
+  
+  mntva_reg_write(sc, MNTVA_H_SYNC_START, 1390);
+  mntva_reg_write(sc, MNTVA_H_SYNC_END, 1430);
+  mntva_reg_write(sc, MNTVA_H_MAX, 1650);
+  mntva_reg_write(sc, MNTVA_V_SYNC_START, 725);
+  mntva_reg_write(sc, MNTVA_V_SYNC_END, 730);
+  mntva_reg_write(sc, MNTVA_V_MAX, 750);
+  mntva_reg_write(sc, MNTVA_PIXEL_CLK_SEL, MNTVA_CLK_75MHZ);
+  
 	mntva_reg_write(sc, MNTVA_SCALEMODE, 0);
 	mntva_reg_write(sc, MNTVA_SCREENW, sc->sc_width);
 	mntva_reg_write(sc, MNTVA_SCREENH, sc->sc_height);
+	mntva_reg_write(sc, MNTVA_ROW_PITCH, 2048);
+	mntva_reg_write(sc, MNTVA_ROW_PITCH_SHIFT, 11);
+	mntva_reg_write(sc, MNTVA_BLITTER_ROW_PITCH, 2048);
+	mntva_reg_write(sc, MNTVA_BLITTER_ROW_PITCH_SHIFT, 11);
+	mntva_reg_write(sc, MNTVA_MARGIN_X, 8);
+	mntva_reg_write(sc, MNTVA_SAFE_X, 0x50);
 
 	if (sc->sc_bpp == 8)
 		mntva_reg_write(sc, MNTVA_COLORMODE, MNTVA_COLORMODE8);
@@ -303,8 +319,6 @@ mntva_mode_set(struct mntva_softc *sc)
 	mntva_reg_write(sc, MNTVA_BLITTERBASEHI, 0);
 	mntva_reg_write(sc, MNTVA_BLITTERBASELO, 0);
 	
-	mntva_rectfill(sc, 0, 0, sc->sc_width, sc->sc_height, 0xffffffff);
-
 	return true;
 }
 
