@@ -69,23 +69,23 @@ static bool mntva_mode_set(struct mntva_softc *sc);
 
 static paddr_t mntva_mmap(void *v, void *vs, off_t offset, int prot);
 static int mntva_ioctl(void *v, void *vs, u_long cmd, void *data, int flag,
-    struct lwp *l);
+		struct lwp *l);
 static void mntva_init_screen(void *cookie, struct vcons_screen *scr,
-    int existing, long *defattr);
+		int existing, long *defattr);
 static void mntva_init_palette(struct mntva_softc *sc);
 /* blitter support */
 static void mntva_rectfill(struct mntva_softc *sc, int x, int y, int wi,
-    int he, uint32_t color);
+		int he, uint32_t color);
 static void mntva_bitblt(struct mntva_softc *sc, int xs, int ys, int xd, 
-int yd, int wi, int he);
+		int yd, int wi, int he);
 
 /* accelerated raster ops */
 static void mntva_eraserows(void *cookie, int row, int nrows, long fillattr);
 static void mntva_copyrows(void *cookie, int srcrow, int dstrow, int nrows);
 static void mntva_copycols(void *cookie, int row, int srccol, int dstcol, 
-    int ncols);
+		int ncols);
 static void mntva_erasecols(void *cookie, int row, int startcol, int ncols,
-long fillattr);
+		long fillattr);
 //static void mntva_cursor(void *cookie, int on, int row, int col);
 
 /*
@@ -99,7 +99,7 @@ int mntvacngetc(dev_t cd);
 void mntvacnpollc(dev_t cd, int on);
 
 CFATTACH_DECL_NEW(mntva, sizeof(struct mntva_softc),
-    mntva_match, mntva_attach, NULL, NULL);
+		mntva_match, mntva_attach, NULL, NULL);
 
 struct wsdisplay_accessops mntva_accessops = {
 	mntva_ioctl,
@@ -155,12 +155,12 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	sc->sc_iot = &sc->sc_bst;
 
 	if (bus_space_map(sc->sc_iot, MNTVA_OFF_REG, MNTVA_REG_SIZE , 0,
-	    &sc->sc_regh)) {
+			&sc->sc_regh)) {
 		aprint_error_dev(sc->sc_dev, "mapping registers failed\n");
 		return;
 	}
 	if (bus_space_map(sc->sc_iot, MNTVA_OFF_FB, sc->sc_memsize,
-	    BUS_SPACE_MAP_LINEAR, &sc->sc_fbh)) {
+			BUS_SPACE_MAP_LINEAR, &sc->sc_fbh)) {
 		aprint_error_dev(sc->sc_dev, "mapping framebuffer failed\n");
 		return;
 	}
@@ -170,11 +170,11 @@ mntva_attach(device_t parent, device_t self, void *aux)
 
 	/* print the physical and virt addresses for registers and fb */
 	aprint_normal_dev(sc->sc_dev, 
-	    "registers at pa/va 0x%08x/0x%08x, fb at pa/va 0x%08x/0x%08x\n",
-	    (uint32_t) sc->sc_regpa,
-	    (uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_regh), 
-	    (uint32_t) sc->sc_fbpa,
-	    (uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_fbh));
+			"registers at pa/va 0x%08x/0x%08x, fb at pa/va 0x%08x/0x%08x\n",
+			(uint32_t) sc->sc_regpa,
+			(uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_regh), 
+			(uint32_t) sc->sc_fbpa,
+			(uint32_t) bus_space_vaddr(sc->sc_iot, sc->sc_fbh));
 
 	sc->sc_width = 1280;
 	sc->sc_height = 720;
@@ -182,16 +182,16 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	sc->sc_linebytes = 4096;
 
 	aprint_normal_dev(sc->sc_dev, "%zu kB framebuffer memory present\n",
-	    sc->sc_memsize / 1024);
+			sc->sc_memsize / 1024);
 
 	aprint_normal_dev(sc->sc_dev, "setting %dx%d %d bpp resolution\n",
-	    sc->sc_width, sc->sc_height, sc->sc_bpp);
+			sc->sc_width, sc->sc_height, sc->sc_bpp);
 
 	mntva_mode_set(sc);
 
 	sc->sc_defaultscreen_descr = (struct wsscreen_descr) {
-	    "default", 0, 0, NULL, 8, 16, 
-	    WSSCREEN_WSCOLORS | WSSCREEN_HILIT, NULL };
+			"default", 0, 0, NULL, 8, 16, 
+			WSSCREEN_WSCOLORS | WSSCREEN_HILIT, NULL };
 	sc->sc_screens[0] = &sc->sc_defaultscreen_descr;
 	sc->sc_screenlist = (struct wsscreen_list) { 1, sc->sc_screens };
 	sc->sc_mode = WSDISPLAYIO_MODE_EMUL;
@@ -250,7 +250,7 @@ mntva_init_palette(struct mntva_softc *sc)
 
 static void
 mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
-    long *defattr)
+		long *defattr)
 {
 	struct mntva_softc *sc = cookie;
 	struct rasops_info *ri = &scr->scr_ri;
@@ -273,7 +273,7 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 	rasops_init(ri, 0, 0);
 	ri->ri_caps = WSSCREEN_WSCOLORS;
 	rasops_reconfig(ri, sc->sc_height / ri->ri_font->fontheight,
-	    sc->sc_width / ri->ri_font->fontwidth);
+			sc->sc_width / ri->ri_font->fontwidth);
 
 	ri->ri_hw = scr;
 
@@ -288,15 +288,15 @@ static bool
 mntva_mode_set(struct mntva_softc *sc)
 {
 	mntva_reg_write(sc, MNTVA_CAPTURE_MODE, 0);
-  
-  mntva_reg_write(sc, MNTVA_H_SYNC_START, 1390);
-  mntva_reg_write(sc, MNTVA_H_SYNC_END, 1430);
-  mntva_reg_write(sc, MNTVA_H_MAX, 1650);
-  mntva_reg_write(sc, MNTVA_V_SYNC_START, 725);
-  mntva_reg_write(sc, MNTVA_V_SYNC_END, 730);
-  mntva_reg_write(sc, MNTVA_V_MAX, 750);
-  mntva_reg_write(sc, MNTVA_PIXEL_CLK_SEL, MNTVA_CLK_75MHZ);
-  
+	
+	mntva_reg_write(sc, MNTVA_H_SYNC_START, 1390);
+	mntva_reg_write(sc, MNTVA_H_SYNC_END, 1430);
+	mntva_reg_write(sc, MNTVA_H_MAX, 1650);
+	mntva_reg_write(sc, MNTVA_V_SYNC_START, 725);
+	mntva_reg_write(sc, MNTVA_V_SYNC_END, 730);
+	mntva_reg_write(sc, MNTVA_V_MAX, 750);
+	mntva_reg_write(sc, MNTVA_PIXEL_CLK_SEL, MNTVA_CLK_75MHZ);
+	
 	mntva_reg_write(sc, MNTVA_SCALEMODE, 0);
 	mntva_reg_write(sc, MNTVA_SCREENW, sc->sc_width);
 	mntva_reg_write(sc, MNTVA_SCREENH, sc->sc_height);
@@ -338,7 +338,7 @@ mntva_reg_write(struct mntva_softc *sc, uint32_t reg, uint32_t val)
 
 static void
 mntva_rectfill(struct mntva_softc *sc, int x, int y, int wi, int he,
-    uint32_t color)
+		uint32_t color)
 {
 	mntva_reg_write(sc, MNTVA_BLITTERRGB, (uint16_t) color);
 	mntva_reg_write(sc, MNTVA_BLITTERX1, (uint16_t) x);
@@ -354,7 +354,7 @@ mntva_rectfill(struct mntva_softc *sc, int x, int y, int wi, int he,
 
 static void
 mntva_bitblt(struct mntva_softc *sc, int xs, int ys, int xd, int yd, int wi,
-    int he)
+		int he)
 {
 	mntva_reg_write(sc, MNTVA_BLITTERX1, (uint16_t) xd);
 	mntva_reg_write(sc, MNTVA_BLITTERY1, (uint16_t) yd);
@@ -409,7 +409,7 @@ mntva_eraserows(void *cookie, int row, int nrows, long fillattr)
 		rasops_unpack_attr(fillattr, &fg, &bg, &ul);
 		if ((row == 0) && (nrows == ri->ri_rows)) 
 			mntva_rectfill(sc, 0, 0, ri->ri_width,
-			    ri->ri_height, ri->ri_devcmap[bg]);
+					ri->ri_height, ri->ri_devcmap[bg]);
 		else {
 			x = ri->ri_xorigin;
 			y = ri->ri_yorigin + ri->ri_font->fontheight * row;
