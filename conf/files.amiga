@@ -221,7 +221,7 @@ file	arch/amiga/dev/grf_cv3d.c	grfcv3d needs-flag
 file	arch/amiga/dev/ite_cv3d.c	grfcv3d & ite
 
 # MNT VA2000
-device	mntva: wsemuldisplaydev, rasops16, rasops32, vcons, videomode
+device	mntva: wsemuldisplaydev, rasops8, rasops16, rasops32, vcons, videomode
 attach	mntva at zbus
 file	arch/amiga/dev/mntva.c		mntva needs-flag
 
