@@ -179,7 +179,7 @@ mntva_attach(device_t parent, device_t self, void *aux)
 	sc->sc_width = 1280;
 	sc->sc_height = 720;
 	sc->sc_bpp = 16;
-	sc->sc_linebytes = 4096;
+	sc->sc_linebytes = 1280*2;
 
 	aprint_normal_dev(sc->sc_dev, "%zu kB framebuffer memory present\n",
 			sc->sc_memsize / 1024);
@@ -287,6 +287,7 @@ mntva_init_screen(void *cookie, struct vcons_screen *scr, int existing,
 static bool
 mntva_mode_set(struct mntva_softc *sc)
 {
+  uint16_t pitch = sc->sc_width;
 	mntva_reg_write(sc, MNTVA_CAPTURE_MODE, 0);
 	
 	mntva_reg_write(sc, MNTVA_H_SYNC_START, 1390);
@@ -300,24 +301,33 @@ mntva_mode_set(struct mntva_softc *sc)
 	mntva_reg_write(sc, MNTVA_SCALEMODE, 0);
 	mntva_reg_write(sc, MNTVA_SCREENW, sc->sc_width);
 	mntva_reg_write(sc, MNTVA_SCREENH, sc->sc_height);
-	mntva_reg_write(sc, MNTVA_ROW_PITCH, 2048);
-	mntva_reg_write(sc, MNTVA_ROW_PITCH_SHIFT, 11);
-	mntva_reg_write(sc, MNTVA_BLITTER_ROW_PITCH, 2048);
-	mntva_reg_write(sc, MNTVA_BLITTER_ROW_PITCH_SHIFT, 11);
 	mntva_reg_write(sc, MNTVA_MARGIN_X, 8);
-	mntva_reg_write(sc, MNTVA_SAFE_X, 0x50);
 
-	if (sc->sc_bpp == 8)
+	mntva_reg_write(sc, MNTVA_SAFE_X1, 0x1);
+	mntva_reg_write(sc, MNTVA_SAFE_X2, 0x3e0);
+	mntva_reg_write(sc, MNTVA_FETCH_PREROLL, 0x3f0);
+	mntva_reg_write(sc, MNTVA_FETCH_DELAY_MAX, 0x17);
+
+	if (sc->sc_bpp == 8) {
 		mntva_reg_write(sc, MNTVA_COLORMODE, MNTVA_COLORMODE8);
-	else if (sc->sc_bpp == 16)
+		pitch = sc->sc_width/2;
+	} else if (sc->sc_bpp == 16) {
 		mntva_reg_write(sc, MNTVA_COLORMODE, MNTVA_COLORMODE16);
-	else if (sc->sc_bpp == 32)
+		pitch = sc->sc_width;
+	} else if (sc->sc_bpp == 32) {
 		mntva_reg_write(sc, MNTVA_COLORMODE, MNTVA_COLORMODE32);
+		pitch = 4 + sc->sc_width*2;
+	}
+	mntva_reg_write(sc, MNTVA_LINEW, pitch);
+	mntva_reg_write(sc, MNTVA_ROW_PITCH, pitch);
+	mntva_reg_write(sc, MNTVA_BLITTER_ROW_PITCH, pitch);
 
 	mntva_reg_write(sc, MNTVA_PANPTRHI, 0);
 	mntva_reg_write(sc, MNTVA_PANPTRLO, 0);
-	mntva_reg_write(sc, MNTVA_BLITTERBASEHI, 0);
-	mntva_reg_write(sc, MNTVA_BLITTERBASELO, 0);
+	mntva_reg_write(sc, MNTVA_BLITTERSRCHI, 0);
+	mntva_reg_write(sc, MNTVA_BLITTERSRCLO, 0);
+	mntva_reg_write(sc, MNTVA_BLITTERDSTHI, 0);
+	mntva_reg_write(sc, MNTVA_BLITTERDSTLO, 0);
 	
 	return true;
 }
@@ -340,13 +350,18 @@ static void
 mntva_rectfill(struct mntva_softc *sc, int x, int y, int wi, int he,
 		uint32_t color)
 {
+	uint32_t offset;
 	mntva_reg_write(sc, MNTVA_BLITTERRGB, (uint16_t) color);
 	mntva_reg_write(sc, MNTVA_BLITTERX1, (uint16_t) x);
 	mntva_reg_write(sc, MNTVA_BLITTERY1, (uint16_t) y);
 	mntva_reg_write(sc, MNTVA_BLITTERX2, (uint16_t) x + wi - 1);
 	mntva_reg_write(sc, MNTVA_BLITTERY2, (uint16_t) y + he - 1);
-	mntva_reg_write(sc, MNTVA_BLITTER_ENABLE, MNTVA_BLITTER_FILL);
 
+	offset = y * sc->sc_linebytes / 2;
+	mntva_reg_write(sc, MNTVA_BLITTERSRCHI, (offset&0xffff0000)>>16);
+	mntva_reg_write(sc, MNTVA_BLITTERSRCLO, offset&0xffff);
+
+	mntva_reg_write(sc, MNTVA_BLITTER_ENABLE, MNTVA_BLITTER_FILL);
 	while(mntva_reg_read(sc, MNTVA_BLITTER_ENABLE)) {
 		// busy wait
 	}
@@ -356,6 +371,7 @@ static void
 mntva_bitblt(struct mntva_softc *sc, int xs, int ys, int xd, int yd, int wi,
 		int he)
 {
+	uint32_t offset;
 	mntva_reg_write(sc, MNTVA_BLITTERX1, (uint16_t) xd);
 	mntva_reg_write(sc, MNTVA_BLITTERY1, (uint16_t) yd);
 	mntva_reg_write(sc, MNTVA_BLITTERX2, (uint16_t) xd + wi - 1);
@@ -364,6 +380,14 @@ mntva_bitblt(struct mntva_softc *sc, int xs, int ys, int xd, int yd, int wi,
 	mntva_reg_write(sc, MNTVA_BLITTERY3, (uint16_t) ys);
 	mntva_reg_write(sc, MNTVA_BLITTERX4, (uint16_t) xs + wi - 1);
 	mntva_reg_write(sc, MNTVA_BLITTERY4, (uint16_t) ys + he - 1);
+
+	offset = ys * sc->sc_linebytes / 2;
+	mntva_reg_write(sc, MNTVA_BLITTERSRCHI, (offset&0xffff0000)>>16);
+	mntva_reg_write(sc, MNTVA_BLITTERSRCLO, offset&0xffff);
+	offset = yd * sc->sc_linebytes / 2;
+	mntva_reg_write(sc, MNTVA_BLITTERDSTHI, (offset&0xffff0000)>>16);
+	mntva_reg_write(sc, MNTVA_BLITTERDSTLO, offset&0xffff);
+
 	mntva_reg_write(sc, MNTVA_BLITTER_ENABLE, MNTVA_BLITTER_COPY);
 	
 	while(mntva_reg_read(sc, MNTVA_BLITTER_ENABLE)) {
